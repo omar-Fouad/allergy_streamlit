@@ -11,6 +11,8 @@ from reportlab.pdfgen import canvas
 from reportlab.lib import colors
 from reportlab.platypus import Table, TableStyle
 import os
+
+
 import numpy as np
 import pyrealsense2 as rs
 import cv2
