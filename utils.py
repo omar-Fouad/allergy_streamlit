@@ -14,10 +14,6 @@ import os
 import numpy as np
 import pyrealsense2 as rs
 import cv2
-#from streamlit_webrtc import webrtc_streamer, VideoHTMLAttributes
-#import av
-
-
 filter = "none"
 def paginate_images(images, page, per_page):
     """Paginate the list of images."""
