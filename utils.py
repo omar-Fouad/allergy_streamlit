@@ -14,7 +14,7 @@ import os
 import numpy as np
 import pyrealsense2 as rs
 import cv2
-filter = "none"
+filter = "fuck"
 def paginate_images(images, page, per_page):
     """Paginate the list of images."""
     start = (page - 1) * per_page
