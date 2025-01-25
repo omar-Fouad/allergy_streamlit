@@ -1,0 +1,12 @@
+matplotlib==3.10.0
+numpy==2.2.1
+pandas==2.2.3
+Pillow==10.1.0
+segmentation_models_pytorch==0.3.4
+streamlit==1.41.1
+streamlit_chat==0.1.1
+torch==2.5.1
+torchvision==0.20.1
+reportlab
+pyrealsense2
+opencv-python-headless
