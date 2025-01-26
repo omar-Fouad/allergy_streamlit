@@ -21,14 +21,46 @@ import os
 def download_bag_file(file_url, output_path):
     """
     Download a file from Google Drive using a public URL.
+    :param file_url: Google Drive file URL
+    :param output_path: Local path to save the downloaded file
     """
-    st.write("Downloading bag file...")
-    response = requests.get(file_url, stream=True)
-    with open(output_path, "wb") as file:
-        for chunk in response.iter_content(chunk_size=1024):
-            if chunk:
-                file.write(chunk)
-    st.success("File downloaded successfully!")
+    # Extract the file ID and create a direct download link
+    if "drive.google.com" in file_url:
+        if "id=" in file_url:
+            file_id = file_url.split("id=")[1]
+        elif "/d/" in file_url:
+            file_id = file_url.split("/d/")[1].split("/")[0]
+        else:
+            st.error("Invalid Google Drive link format!")
+            return
+
+        direct_url = f"https://drive.google.com/uc?id={file_id}"
+    else:
+        direct_url = file_url  # Assume it's a direct URL
+
+    # Download the file
+    try:
+        st.write("Downloading bag file...")
+        response = requests.get(direct_url, stream=True)
+        response.raise_for_status()  # Raise an error for HTTP issues
+        with open(output_path, "wb") as file:
+            for chunk in response.iter_content(chunk_size=1024):
+                if chunk:
+                    file.write(chunk)
+        st.success(f"File downloaded successfully: {output_path}")
+    except Exception as e:
+        st.error(f"Failed to download the file: {e}")
+
+    # """
+    # Download a file from Google Drive using a public URL.
+    # """
+    # st.write("Downloading bag file...")
+    # response = requests.get(file_url, stream=True)
+    # with open(output_path, "wb") as file:
+        # for chunk in response.iter_content(chunk_size=1024):
+            # if chunk:
+                # file.write(chunk)
+    # st.success("File downloaded successfully!")
 
 sound_file = "beep.mp3"  
 base64_sound = get_base64_sound(sound_file)
@@ -202,7 +234,7 @@ if current == "Capturing Images":
         
         #folder_path = st.text_input("Enter folder path:", value=".\\bags")
         # Input Google Drive URL
-        drive_url = st.text_input("Enter the Google Drive link for the bag file:",value="https://drive.google.com/uc?id=1glI2sJHKF7-5Z22EOEZPPLOTj4mHiUT4")
+        drive_url = st.text_input("Enter the Google Drive link for the bag file:",value="https://drive.google.com/uc?id=1glI2sJHKF7-5Z22EOEZPPLOTj4mHiUT4") #142.251.36.14 drive.google.com
         # Input for file type filter
         #file_extension =".bag"# st.text_input("Enter file type (e.g., .txt, .csv, .jpg):", value=".bag")
             # Validate the folder path
