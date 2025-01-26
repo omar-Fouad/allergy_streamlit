@@ -355,7 +355,7 @@ if current == "Capturing Images":
             capture_button = middle.button("Capture Image", key="capture_button", use_container_width=True)
         
 
-            while st.session_state.pipeline:
+        while st.session_state.pipeline:
                 frame = get_frame(st.session_state.pipeline)
                 if frame is not None:
                     # Convert BGR to RGB for Streamlit
