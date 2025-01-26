@@ -375,7 +375,8 @@ if current == "Capturing Images":
                     capture_button=False
                i=i+1
                st.write(f"Displayed frame {i}")
-               time.sleep(0.1)    
+               st.experimental_rerun()  # Force rerun to update frame
+               time.sleep(0.03)    
                             
     with capture_tab:
         st.header("Webcam Capture")
