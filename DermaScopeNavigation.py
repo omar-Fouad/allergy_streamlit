@@ -9,7 +9,7 @@ import math
 import uuid
 import cv2
 from PIL import Image as im 
-
+import gdown
 
 from utils import create_allergen_overlay, generate_pdf, load_model, segment_image, \
 save_segmented_image, play_sound_html, get_base64_sound, mock_template_matching, resize_image, paginate_images,\
@@ -65,80 +65,38 @@ def download_bag_file(file_url, output_path):
                 return
 
             # Direct download URL
-            download_url = f"https://drive.google.com/uc?id={file_id}&export=download"
+            download_url = f"https://drive.google.com/uc?id={file_id}"
+            gdown.download(download_url, bag_file, quiet=False)
+            # # Perform the initial request
+            # response = session.get(download_url, stream=True)
+            # response.raise_for_status()
 
-            # Perform the initial request
-            response = session.get(download_url, stream=True)
-            response.raise_for_status()
+            # # Handle large file confirmation
+            # token = None
+            # for key, value in response.cookies.items():
+                # if key.startswith("download_warning"):
+                    # token = value
+                    # break
 
-            # Handle large file confirmation
-            token = None
-            for key, value in response.cookies.items():
-                if key.startswith("download_warning"):
-                    token = value
-                    break
+            # if token:
+                # # Append the confirmation token to the URL
+                # download_url = f"https://drive.google.com/uc?id={file_id}&export=download&confirm={token}"
+                # response = session.get(download_url, stream=True)
+                # response.raise_for_status()
 
-            if token:
-                # Append the confirmation token to the URL
-                download_url = f"https://drive.google.com/uc?id={file_id}&export=download&confirm={token}"
-                response = session.get(download_url, stream=True)
-                response.raise_for_status()
+            # # Save the file
+            # with open(output_path, "wb") as f:
+                # for chunk in response.iter_content(chunk_size=1024):
+                    # if chunk:
+                        # f.write(chunk)
 
-            # Save the file
-            with open(output_path, "wb") as f:
-                for chunk in response.iter_content(chunk_size=1024):
-                    if chunk:
-                        f.write(chunk)
-
-            st.success(f"File downloaded successfully: {output_path}")
-        else:
-            st.error("Unsupported URL format. Only Google Drive links are supported.")
+            # st.success(f"File downloaded successfully: {output_path}")
+        # else:
+            # st.error("Unsupported URL format. Only Google Drive links are supported.")
     except Exception as e:
-        st.error(f"Error downloading the file: {e}")
+         st.error(f"Error downloading the file: {e}")
 
-def download_bag_file1(file_url, output_path):
-    """
-    Download a file from Google Drive using a public URL.
-    :param file_url: Google Drive file URL
-    :param output_path: Local path to save the downloaded file
-    """
-    # Extract the file ID and create a direct download link
-    if "drive.google.com" in file_url:
-        if "id=" in file_url:
-            file_id = file_url.split("id=")[1]
-        elif "/d/" in file_url:
-            file_id = file_url.split("/d/")[1].split("/")[0]
-        else:
-            st.error("Invalid Google Drive link format!")
-            return
 
-        direct_url = f"https://drive.google.com/uc?id={file_id}"
-    else:
-        direct_url = file_url  # Assume it's a direct URL
-
-    # Download the file
-    try:
-        st.write("Downloading bag file...")
-        response = requests.get(direct_url, stream=True)
-        response.raise_for_status()  # Raise an error for HTTP issues
-        with open(output_path, "wb") as file:
-            for chunk in response.iter_content(chunk_size=1024):
-                if chunk:
-                    file.write(chunk)
-        st.success(f"File downloaded successfully: {output_path}")
-    except Exception as e:
-        st.error(f"Failed to download the file: {e}")
-
-    # """
-    # Download a file from Google Drive using a public URL.
-    # """
-    # st.write("Downloading bag file...")
-    # response = requests.get(file_url, stream=True)
-    # with open(output_path, "wb") as file:
-        # for chunk in response.iter_content(chunk_size=1024):
-            # if chunk:
-                # file.write(chunk)
-    # st.success("File downloaded successfully!")
 def get_file_size(file_path):
     """
     Get the size of the file in MB and GB.
@@ -309,7 +267,7 @@ if current == "Capturing Images":
             st.success(f"Uploaded: {', '.join(uploaded_names)}")
 
     
-     realsense_tab, capture_tab = st.tabs(["Intel RealSense", "Webcam Capture" ])
+    realsense_tab, capture_tab = st.tabs(["Intel RealSense", "Webcam Capture" ])
     
         
     with realsense_tab:

@@ -10,3 +10,4 @@ torchvision==0.20.1
 reportlab
 pyrealsense2
 opencv-python-headless
+gdown
