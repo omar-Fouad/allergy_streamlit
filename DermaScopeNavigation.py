@@ -363,7 +363,10 @@ if current == "Capturing Images":
             if frame is not None:
                # Convert BGR to RGB for Streamlit
                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-               frame_placeholder.image(frame_rgb, channels="RGB", use_container_width=True)
+               if i%4==0:
+                frame_placeholder.image(frame_rgb, channels="RGB", use_container_width=True)
+               else:
+                frame_placeholder.empty()
                if "capture_button" in st.session_state:
                  if capture_button:
                     file_name  = f"imageD405_{uuid.uuid4().hex}.png"
