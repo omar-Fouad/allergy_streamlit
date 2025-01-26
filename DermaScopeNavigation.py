@@ -199,9 +199,10 @@ if current == "Capturing Images":
         input_source = st.radio("Choose input source:", ["Direct Camera", "Bag File"]) 
         st.success("Stream started!")
         # Title of the app
-
-        folder_path = st.text_input("Enter folder path:", value=".\\bags")
         
+        folder_path = st.text_input("Enter folder path:", value=".\\bags")
+        # Input Google Drive URL
+        drive_url = st.text_input("Enter the Google Drive link for the bag file:",value=""https://drive.google.com/uc?id=1glI2sJHKF7-5Z22EOEZPPLOTj4mHiUT4")
         # Input for file type filter
         file_extension =".bag"# st.text_input("Enter file type (e.g., .txt, .csv, .jpg):", value=".bag")
             # Validate the folder path
