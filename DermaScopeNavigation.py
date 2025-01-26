@@ -293,7 +293,7 @@ if current == "Capturing Images":
                    # Download the file from the provided Google Drive URL
                    download_bag_file(drive_url, bag_file)
                     # Step 2: Check and display the file size
-                   file_size_bytes, file_size_mb, file_size_gb = get_file_size(output_path)
+                   file_size_bytes, file_size_mb, file_size_gb = get_file_size(bag_file)
                    if file_size_bytes is not None: 
                       st.write(f"File size: {file_size_bytes} bytes")
                       st.write(f"File size: {file_size_mb:.2f} MB")
