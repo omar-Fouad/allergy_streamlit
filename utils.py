@@ -14,7 +14,7 @@ import os
 import numpy as np
 import pyrealsense2 as rs
 import cv2
-from tkinter import Tk, filedialog
+#from tkinter import Tk, filedialog
 
 
 def start_stream(name=None):
