@@ -61,7 +61,17 @@ def download_bag_file(file_url, output_path):
             # if chunk:
                 # file.write(chunk)
     # st.success("File downloaded successfully!")
-
+def get_file_size(file_path):
+    """
+    Get the size of the file in MB and GB.
+    """
+    if os.path.exists(file_path):
+        file_size_bytes = os.path.getsize(file_path)
+        file_size_mb = file_size_bytes / (1024 * 1024)
+        file_size_gb = file_size_bytes / (1024 * 1024 * 1024)
+        return file_size_bytes, file_size_mb, file_size_gb
+    else:
+        return None, None, None
 sound_file = "beep.mp3"  
 base64_sound = get_base64_sound(sound_file)
 UPLOAD_DIR = "Trainings"
@@ -282,7 +292,14 @@ if current == "Capturing Images":
 
                    # Download the file from the provided Google Drive URL
                    download_bag_file(drive_url, bag_file)
-            
+                    # Step 2: Check and display the file size
+                   file_size_bytes, file_size_mb, file_size_gb = get_file_size(output_path)
+                   if file_size_bytes is not None: 
+                      st.write(f"File size: {file_size_bytes} bytes")
+                      st.write(f"File size: {file_size_mb:.2f} MB")
+                      st.write(f"File size: {file_size_gb:.2f} GB")
+                   else:
+                      st.error("The file could not be downloaded or is empty!")
                    if st.session_state.pipeline is None:
                         st.session_state.pipeline = start_stream(bag_file)
                         st.session_state.capturing = True
