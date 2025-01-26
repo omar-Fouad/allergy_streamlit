@@ -309,7 +309,7 @@ if current == "Capturing Images":
         
 
         ##########################################################
-        left, middle, right = st.columns(3)
+        left, middle, right= st.columns(3)
         if left.button("Capture from Intel RealSense Camera", use_container_width=True):
             if input_source == "Direct Camera":
                 # Configure the pipeline for live streaming from the camera
@@ -325,10 +325,11 @@ if current == "Capturing Images":
                    st.error("Please provide a valid Google Drive URL!")
                else:
                    # Define a local file path for the downloaded bag file
-                   bag_file = "downloaded_file.bag"
+                   bag_file = "D405-test.bag"
 
                    # Download the file from the provided Google Drive URL
                    download_bag_file(drive_url, bag_file)
+                   
                     # Step 2: Check and display the file size
                    file_size_bytes, file_size_mb, file_size_gb = get_file_size(bag_file)
                    if file_size_bytes is not None: 
