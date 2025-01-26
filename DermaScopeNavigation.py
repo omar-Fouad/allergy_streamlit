@@ -198,7 +198,7 @@ if current == "Capturing Images":
         # Title of the app
         #https://drive.google.com/file/d/1glI2sJHKF7-5Z22EOEZPPLOTj4mHiUT4/view?usp=sharing
         #url = "https://drive.google.com/uc?id=1glI2sJHKF7-5Z22EOEZPPLOTj4mHiUT4
-        drive_url = st.text_input("Enter url path:", value="https://drive.google.com/uc?id=1glI2sJHKF7-5Z22EOEZPPLOTj4mHiUT4")
+        #drive_url = st.text_input("Enter url path:", value="https://drive.google.com/uc?id=1glI2sJHKF7-5Z22EOEZPPLOTj4mHiUT4")
         
         # Input for file type filter
         file_extension =".bag"# st.text_input("Enter file type (e.g., .txt, .csv, .jpg):", value=".bag")
