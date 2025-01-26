@@ -15,141 +15,7 @@ from utils import create_allergen_overlay, generate_pdf, load_model, segment_ima
 save_segmented_image, play_sound_html, get_base64_sound, mock_template_matching, resize_image, paginate_images,\
     save_uploaded_file, capture_from_realsense, capture_from_webcam, save_captured_image, load_images, delete_images,\
         start_stream, stop_stream, get_frame
-import requests
-import os
-def start_stream_new(st, bag_file=None):
-    pipeline = rs.pipeline()
-    config = rs.config()
-    
-    try:
-        if bag_file:
-            # Check if bag file exists
-            if not os.path.exists(bag_file):
-                st.error(f"Bag file not found: {bag_file}")
-            config.enable_device_from_file(bag_file)
-            print(f"Streaming from file: {bag_file}")
-        else:
-            # Configure for live camera
-            context = rs.context()
-            if len(context.devices) == 0:
-                st.error("No RealSense device connected.")
-            
-            config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
-            config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
-            print("Streaming from live camera.")
 
-        # Start the pipeline
-        pipeline.start(config)
-        return pipeline
-
-    except RuntimeError as e:
-        st.error(f"Failed to start pipeline: {e}")
-def download_bag_file(file_url, output_path):
-    """
-    Download a .bag file from Google Drive or a direct URL.
-    Handles Google Drive confirmation tokens for large files.
-    """
-    try:
-        st.write("Downloading the bag file...")
-        session = requests.Session()
-
-        # Check if the URL is a Google Drive link
-        if "drive.google.com" in file_url:
-            # Extract the file ID from the URL
-            if "id=" in file_url:
-                file_id = file_url.split("id=")[1]
-            elif "/d/" in file_url:
-                file_id = file_url.split("/d/")[1].split("/")[0]
-            else:
-                st.error("Invalid Google Drive link format!")
-                return
-
-            # Direct download URL
-            download_url = f"https://drive.google.com/uc?id={file_id}&export=download"
-
-            # Perform the initial request
-            response = session.get(download_url, stream=True)
-            response.raise_for_status()
-
-            # Handle large file confirmation
-            token = None
-            for key, value in response.cookies.items():
-                if key.startswith("download_warning"):
-                    token = value
-                    break
-
-            if token:
-                # Append the confirmation token to the URL
-                download_url = f"https://drive.google.com/uc?id={file_id}&export=download&confirm={token}"
-                response = session.get(download_url, stream=True)
-                response.raise_for_status()
-
-            # Save the file
-            with open(output_path, "wb") as f:
-                for chunk in response.iter_content(chunk_size=1024):
-                    if chunk:
-                        f.write(chunk)
-
-            st.success(f"File downloaded successfully: {output_path}")
-        else:
-            st.error("Unsupported URL format. Only Google Drive links are supported.")
-    except Exception as e:
-        st.error(f"Error downloading the file: {e}")
-
-def download_bag_file1(file_url, output_path):
-    """
-    Download a file from Google Drive using a public URL.
-    :param file_url: Google Drive file URL
-    :param output_path: Local path to save the downloaded file
-    """
-    # Extract the file ID and create a direct download link
-    if "drive.google.com" in file_url:
-        if "id=" in file_url:
-            file_id = file_url.split("id=")[1]
-        elif "/d/" in file_url:
-            file_id = file_url.split("/d/")[1].split("/")[0]
-        else:
-            st.error("Invalid Google Drive link format!")
-            return
-
-        direct_url = f"https://drive.google.com/uc?id={file_id}"
-    else:
-        direct_url = file_url  # Assume it's a direct URL
-
-    # Download the file
-    try:
-        st.write("Downloading bag file...")
-        response = requests.get(direct_url, stream=True)
-        response.raise_for_status()  # Raise an error for HTTP issues
-        with open(output_path, "wb") as file:
-            for chunk in response.iter_content(chunk_size=1024):
-                if chunk:
-                    file.write(chunk)
-        st.success(f"File downloaded successfully: {output_path}")
-    except Exception as e:
-        st.error(f"Failed to download the file: {e}")
-
-    # """
-    # Download a file from Google Drive using a public URL.
-    # """
-    # st.write("Downloading bag file...")
-    # response = requests.get(file_url, stream=True)
-    # with open(output_path, "wb") as file:
-        # for chunk in response.iter_content(chunk_size=1024):
-            # if chunk:
-                # file.write(chunk)
-    # st.success("File downloaded successfully!")
-def get_file_size(file_path):
-    """
-    Get the size of the file in MB and GB.
-    """
-    if os.path.exists(file_path):
-        file_size_bytes = os.path.getsize(file_path)
-        file_size_mb = file_size_bytes / (1024 * 1024)
-        file_size_gb = file_size_bytes / (1024 * 1024 * 1024)
-        return file_size_bytes, file_size_mb, file_size_gb
-    else:
-        return None, None, None
 sound_file = "beep.mp3"  
 base64_sound = get_base64_sound(sound_file)
 UPLOAD_DIR = "Trainings"
@@ -177,6 +43,17 @@ button_style = """
 }
 </style>
 """
+def download_bag_file(file_url, output_path):
+    """
+    Download a file from Google Drive using a public URL.
+    """
+    st.write("Downloading bag file...")
+    response = requests.get(file_url, stream=True)
+    with open(output_path, "wb") as file:
+        for chunk in response.iter_content(chunk_size=1024):
+            if chunk:
+                file.write(chunk)
+    st.success("File downloaded successfully!")
 
 # Step titles and content
 steps = [
@@ -309,7 +186,7 @@ if current == "Capturing Images":
             st.success(f"Uploaded: {', '.join(uploaded_names)}")
 
     
-     realsense_tab, capture_tab = st.tabs(["Intel RealSense", "Webcam Capture" ])
+    capture_tab, realsense_tab = st.tabs(["Intel RealSense", "Webcam Capture" ])
     
         
     with realsense_tab:
@@ -319,13 +196,12 @@ if current == "Capturing Images":
         input_source = st.radio("Choose input source:", ["Direct Camera", "Bag File"]) 
         st.success("Stream started!")
         # Title of the app
-        
-        #folder_path = st.text_input("Enter folder path:", value=".\\bags")
-        # Input Google Drive URL
-        drive_url = st.text_input("Enter the Google Drive link for the bag file:",value="https://drive.google.com/uc?id=1glI2sJHKF7-5Z22EOEZPPLOTj4mHiUT4") #142.251.36.14 drive.google.com
+        #https://drive.google.com/file/d/1glI2sJHKF7-5Z22EOEZPPLOTj4mHiUT4/view?usp=sharing
+        #url = "https://drive.google.com/uc?id=1glI2sJHKF7-5Z22EOEZPPLOTj4mHiUT4
+        #drive_url = st.text_input("Enter url path:", value="https://drive.google.com/uc?id=1glI2sJHKF7-5Z22EOEZPPLOTj4mHiUT4")
         
         # Input for file type filter
-        #file_extension =".bag"# st.text_input("Enter file type (e.g., .txt, .csv, .jpg):", value=".bag")
+        file_extension =".bag"# st.text_input("Enter file type (e.g., .txt, .csv, .jpg):", value=".bag")
             # Validate the folder path
         selected_file = None
         
@@ -356,30 +232,21 @@ if current == "Capturing Images":
             if input_source == "Direct Camera":
                 # Configure the pipeline for live streaming from the camera
                 st.write("Starting live stream from RealSense camera...")
-                #if selected_file is not None:
-                if st.session_state.pipeline is None:
+                if selected_file is not None:
+                    if st.session_state.pipeline is None:
                             st.session_state.pipeline = start_stream()
                             st.session_state.capturing = True
                             st.success("Stream started!")
 
             elif input_source == "Bag File":
-               if not drive_url:
-                   st.error("Please provide a valid Google Drive URL!")
-               else:
-                   # Define a local file path for the downloaded bag file
-                   bag_file = "downloaded_file.bag"
-
-                   # Download the file from the provided Google Drive URL
-                   download_bag_file(drive_url, bag_file)
-                    # Step 2: Check and display the file size
-                   file_size_bytes, file_size_mb, file_size_gb = get_file_size(bag_file)
-                   if file_size_bytes is not None: 
-                      st.write(f"File size: {file_size_bytes} bytes")
-                      st.write(f"File size: {file_size_mb:.2f} MB")
-                      st.write(f"File size: {file_size_gb:.2f} GB")
-                   else:
-                      st.error("The file could not be downloaded or is empty!")
-                   if st.session_state.pipeline is None:
+                if not drive_url:
+                     st.error("Please provide a valid Google Drive URL!")
+                else:
+                     # Define a local file path for the downloaded bag file
+                     bag_file = "downloaded_file.bag"
+                     # Download the file from the provided Google Drive URL
+                     download_bag_file(drive_url, bag_file)            
+                if st.session_state.pipeline is None:
                         st.session_state.pipeline = start_stream(bag_file)
                         st.session_state.capturing = True
                         st.success("Stream started!")
