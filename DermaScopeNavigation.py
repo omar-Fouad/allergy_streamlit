@@ -15,6 +15,20 @@ from utils import create_allergen_overlay, generate_pdf, load_model, segment_ima
 save_segmented_image, play_sound_html, get_base64_sound, mock_template_matching, resize_image, paginate_images,\
     save_uploaded_file, capture_from_realsense, capture_from_webcam, save_captured_image, load_images, delete_images,\
         start_stream, stop_stream, get_frame
+import requests
+import os
+
+def download_bag_file(file_url, output_path):
+    """
+    Download a file from Google Drive using a public URL.
+    """
+    st.write("Downloading bag file...")
+    response = requests.get(file_url, stream=True)
+    with open(output_path, "wb") as file:
+        for chunk in response.iter_content(chunk_size=1024):
+            if chunk:
+                file.write(chunk)
+    st.success("File downloaded successfully!")
 
 sound_file = "beep.mp3"  
 base64_sound = get_base64_sound(sound_file)
