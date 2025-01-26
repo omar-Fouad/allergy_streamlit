@@ -371,6 +371,7 @@ if current == "Capturing Images":
                     st.success(f"Captured image saved as {file_name}")
                     st.session_state.capture_requested = False
                     capture_button=False
+               time.sleep(0.1)    
                             
     with capture_tab:
         st.header("Webcam Capture")
