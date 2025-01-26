@@ -17,8 +17,59 @@ save_segmented_image, play_sound_html, get_base64_sound, mock_template_matching,
         start_stream, stop_stream, get_frame
 import requests
 import os
-
 def download_bag_file(file_url, output_path):
+    """
+    Download a .bag file from Google Drive or a direct URL.
+    Handles Google Drive confirmation tokens for large files.
+    """
+    try:
+        st.write("Downloading the bag file...")
+        session = requests.Session()
+
+        # Check if the URL is a Google Drive link
+        if "drive.google.com" in file_url:
+            # Extract the file ID from the URL
+            if "id=" in file_url:
+                file_id = file_url.split("id=")[1]
+            elif "/d/" in file_url:
+                file_id = file_url.split("/d/")[1].split("/")[0]
+            else:
+                st.error("Invalid Google Drive link format!")
+                return
+
+            # Direct download URL
+            download_url = f"https://drive.google.com/uc?id={file_id}&export=download"
+
+            # Perform the initial request
+            response = session.get(download_url, stream=True)
+            response.raise_for_status()
+
+            # Handle large file confirmation
+            token = None
+            for key, value in response.cookies.items():
+                if key.startswith("download_warning"):
+                    token = value
+                    break
+
+            if token:
+                # Append the confirmation token to the URL
+                download_url = f"https://drive.google.com/uc?id={file_id}&export=download&confirm={token}"
+                response = session.get(download_url, stream=True)
+                response.raise_for_status()
+
+            # Save the file
+            with open(output_path, "wb") as f:
+                for chunk in response.iter_content(chunk_size=1024):
+                    if chunk:
+                        f.write(chunk)
+
+            st.success(f"File downloaded successfully: {output_path}")
+        else:
+            st.error("Unsupported URL format. Only Google Drive links are supported.")
+    except Exception as e:
+        st.error(f"Error downloading the file: {e}")
+
+def download_bag_file1(file_url, output_path):
     """
     Download a file from Google Drive using a public URL.
     :param file_url: Google Drive file URL
@@ -244,7 +295,8 @@ if current == "Capturing Images":
         
         #folder_path = st.text_input("Enter folder path:", value=".\\bags")
         # Input Google Drive URL
-        drive_url = st.text_input("Enter the Google Drive link for the bag file:",value="https://drive.google.com/uc?id=1glI2sJHKF7-5Z22EOEZPPLOTj4mHiUT4&export=download") #142.251.36.14 drive.google.com
+        drive_url = st.text_input("Enter the Google Drive link for the bag file:",value="https://drive.google.com/uc?id=1glI2sJHKF7-5Z22EOEZPPLOTj4mHiUT4") #142.251.36.14 drive.google.com
+        
         # Input for file type filter
         #file_extension =".bag"# st.text_input("Enter file type (e.g., .txt, .csv, .jpg):", value=".bag")
             # Validate the folder path
