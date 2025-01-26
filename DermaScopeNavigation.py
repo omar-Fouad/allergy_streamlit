@@ -17,6 +17,7 @@ save_segmented_image, play_sound_html, get_base64_sound, mock_template_matching,
         start_stream, stop_stream, get_frame
 import requests
 import os
+i=0
 def start_stream_new(st, bag_file=None):
     pipeline = rs.pipeline()
     config = rs.config()
