@@ -251,7 +251,7 @@ if current == "Capturing Images":
                    # Download the file from the provided Google Drive URL
                    download_bag_file(drive_url, bag_file)
             
-                if st.session_state.pipeline is None:
+                   if st.session_state.pipeline is None:
                         st.session_state.pipeline = start_stream(bag_file)
                         st.session_state.capturing = True
                         st.success("Stream started!")
