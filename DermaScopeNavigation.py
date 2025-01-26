@@ -318,6 +318,7 @@ if current == "Capturing Images":
                 if st.session_state.pipeline is None:
                             st.session_state.pipeline = start_stream()
                             st.session_state.capturing = True
+                            i=0
                             st.success("Stream started!")
 
             elif input_source == "Bag File":
@@ -355,7 +356,7 @@ if current == "Capturing Images":
         if st.session_state.capturing:
             capture_button = middle.button("Capture Image", key="capture_button", use_container_width=True)
         
-
+        
         while st.session_state.pipeline:
             frame = get_frame(st.session_state.pipeline)
             if frame is not None:
@@ -371,6 +372,8 @@ if current == "Capturing Images":
                     st.success(f"Captured image saved as {file_name}")
                     st.session_state.capture_requested = False
                     capture_button=False
+               i=i+1
+               st.write(f"Displayed frame {i}")
                time.sleep(0.1)    
                             
     with capture_tab:
