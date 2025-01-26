@@ -356,19 +356,20 @@ if current == "Capturing Images":
         
 
         while st.session_state.pipeline:
-                frame = get_frame(st.session_state.pipeline)
-                if frame is not None:
-                    # Convert BGR to RGB for Streamlit
-                    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                    frame_placeholder.image(frame_rgb, channels="RGB", use_container_width=True)
-                    
-                    # Save image only when the Capture button is clicked
-                    if capture_button:
-                        file_name = f"image_{uuid.uuid4().hex}.png"
-                        captured_image = im.fromarray(frame_rgb)  # Convert frame to PIL image
-                        save_captured_image(captured_image, UPLOAD_DIR, file_name)
-                        st.success(f"Captured image saved as {file_name}")
-                        break  # Exit loop after capturing
+            frame = get_frame(st.session_state.pipeline)
+            if frame is not None:
+               # Convert BGR to RGB for Streamlit
+               frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+               frame_placeholder.image(frame_rgb, channels="RGB", use_container_width=True)
+               if "capture_button" in st.session_state:
+                 if capture_button:
+                    file_name  = f"imageD405_{uuid.uuid4().hex}.png"
+                    #cv2.imwrite(file_name, frame)
+                    captured_image = im.fromarray(frame) 
+                    save_captured_image(captured_image, UPLOAD_DIR, file_name)
+                    st.success(f"Captured image saved as {file_name}")
+                    st.session_state.capture_requested = False
+                    capture_button=False
                             
     with capture_tab:
         st.header("Webcam Capture")
