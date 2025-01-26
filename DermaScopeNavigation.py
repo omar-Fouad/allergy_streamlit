@@ -186,7 +186,7 @@ if current == "Capturing Images":
         st.success("Stream started!")
         # Title of the app
 
-        folder_path = st.text_input("Enter folder path:", value=".\\bags")
+        folder_path = st.text_input("Enter folder path:", value="D:\work\shadi\allergy-test-streamlit\bags")
         
         # Input for file type filter
         file_extension =".bag"# st.text_input("Enter file type (e.g., .txt, .csv, .jpg):", value=".bag")
