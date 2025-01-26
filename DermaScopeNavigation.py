@@ -43,6 +43,17 @@ button_style = """
 }
 </style>
 """
+def download_bag_file(file_url, output_path):
+    """
+    Download a file from Google Drive using a public URL.
+    """
+    st.write("Downloading bag file...")
+    response = requests.get(file_url, stream=True)
+    with open(output_path, "wb") as file:
+        for chunk in response.iter_content(chunk_size=1024):
+            if chunk:
+                file.write(chunk)
+    st.success("File downloaded successfully!")
 
 # Step titles and content
 steps = [
@@ -185,31 +196,32 @@ if current == "Capturing Images":
         input_source = st.radio("Choose input source:", ["Direct Camera", "Bag File"]) 
         st.success("Stream started!")
         # Title of the app
-
-        folder_path = st.text_input("Enter folder path:", value="D:\\work\\shadi\\allergy-test-streamlit\\bags")
+        #https://drive.google.com/file/d/1glI2sJHKF7-5Z22EOEZPPLOTj4mHiUT4/view?usp=sharing
+        #url = "https://drive.google.com/uc?id=1glI2sJHKF7-5Z22EOEZPPLOTj4mHiUT4
+        drive_url = st.text_input("Enter url path:", value="https://drive.google.com/uc?id=1glI2sJHKF7-5Z22EOEZPPLOTj4mHiUT4")
         
         # Input for file type filter
         file_extension =".bag"# st.text_input("Enter file type (e.g., .txt, .csv, .jpg):", value=".bag")
             # Validate the folder path
         selected_file = None
         
-        if os.path.exists(folder_path) and os.path.isdir(folder_path):
-            # List and filter files by the given file type
-                files = [f for f in os.listdir(folder_path) 
-                    if os.path.isfile(os.path.join(folder_path, f)) and f.endswith(file_extension)]
-                if files:
-                # Dropdown to select a file
-                    selected_file = st.selectbox("Select a file:", files)
-                    # Display the selected file name
-                    if selected_file:
-                        full_path = os.path.join(folder_path, selected_file)
-                        st.success(f"You selected: **{selected_file}**")
-                        st.info(f"Full Path: `{full_path}`")
+        # if os.path.exists(folder_path) and os.path.isdir(folder_path):
+            # # List and filter files by the given file type
+                # files = [f for f in os.listdir(folder_path) 
+                    # if os.path.isfile(os.path.join(folder_path, f)) and f.endswith(file_extension)]
+                # if files:
+                # # Dropdown to select a file
+                    # selected_file = st.selectbox("Select a file:", files)
+                    # # Display the selected file name
+                    # if selected_file:
+                        # full_path = os.path.join(folder_path, selected_file)
+                        # st.success(f"You selected: **{selected_file}**")
+                        # st.info(f"Full Path: `{full_path}`")
 
-                else:
-                    st.warning(f"No files found with the extension '{file_extension}' in the folder.")
-        else:
-                st.error("The folder does not exist. Please enter a valid folder path.")
+                # else:
+                    # st.warning(f"No files found with the extension '{file_extension}' in the folder.")
+        # else:
+                # st.error("The folder does not exist. Please enter a valid folder path.")
 
         frame_placeholder = st.empty()  # Placeholder for video frame
         
@@ -227,8 +239,15 @@ if current == "Capturing Images":
                             st.success("Stream started!")
 
             elif input_source == "Bag File":
+                if not drive_url:
+                     st.error("Please provide a valid Google Drive URL!")
+                else:
+                     # Define a local file path for the downloaded bag file
+                     bag_file = "downloaded_file.bag"
+                     # Download the file from the provided Google Drive URL
+                     download_bag_file(drive_url, bag_file)            
                 if st.session_state.pipeline is None:
-                        st.session_state.pipeline = start_stream(full_path)
+                        st.session_state.pipeline = start_stream(bag_file)
                         st.session_state.capturing = True
                         st.success("Stream started!")
 
