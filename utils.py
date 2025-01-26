@@ -14,7 +14,57 @@ import os
 import numpy as np
 import pyrealsense2 as rs
 import cv2
-filter = "fuck"
+from tkinter import Tk, filedialog
+
+
+def start_stream(name=None):
+    pipeline = rs.pipeline()
+    config = rs.config()
+   # config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+   # pipeline.start(config)
+   # Tell config that we will use a recorded device from file to be used by the pipeline through playback.
+    if name:
+     rs.config.enable_device_from_file(config,name)
+
+    
+    # Configure the pipeline to stream the depth stream
+    # Change this parameters according to the recorded bag file resolution
+    config.enable_stream(rs.stream.depth, rs.format.z16, 30)
+
+    # Start streaming from file
+    pipeline.start(config)
+
+    return pipeline
+
+# Function to stop the RealSense pipeline
+def stop_stream(pipeline):
+    pipeline.stop()
+
+# Function to get a frame from the RealSense pipeline
+def get_frame(pipeline):
+    # frames = pipeline.wait_for_frames()
+    # color_frame = frames.get_color_frame()
+    # if not color_frame:
+        # return None
+    # color_image = np.asanyarray(color_frame.get_data())
+        # Create colorizer object
+        colorizer = rs.colorizer()
+
+        frames = pipeline.wait_for_frames()
+
+        # Get depth frame
+        depth_frame = frames.get_depth_frame()
+
+        # Colorize depth frame to jet colormap
+        depth_color_frame = colorizer.colorize(depth_frame)
+
+        # Convert depth_frame to numpy array to render image in opencv
+        depth_color_image = np.asanyarray(depth_color_frame.get_data())
+
+
+        return depth_color_image
+
+
 def paginate_images(images, page, per_page):
     """Paginate the list of images."""
     start = (page - 1) * per_page
@@ -29,7 +79,6 @@ def save_uploaded_file(uploaded_dir, uploaded_file):
 
 def save_captured_image(image, uploaded_dir, file_name):
     file_path = os.path.join(uploaded_dir, file_name)
-    
     image.save(file_path)
     return file_path
 
@@ -53,60 +102,22 @@ def delete_images(uploaded_dir, selected_images):
 
 def capture_from_realsense(st):
     """Capture an image from the Intel RealSense camera."""
-    # Create pipeline
     pipeline = rs.pipeline()
-
-    # Create a config object
     config = rs.config()
+    config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
 
-    # Tell config that we will use a recorded device from file to be used by the pipeline through playback.
-    rs.config.enable_device_from_file(config, '..\\D405-test.bag')
-
-    # Configure the pipeline to stream the depth stream
-    # Change this parameters according to the recorded bag file resolution
-    config.enable_stream(rs.stream.depth, rs.format.z16, 30)
-    #config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
-    # Start streaming from file
-    pipeline.start(config)
-    # Create colorizer object
-    colorizer = rs.colorizer()
-    # pipeline = rs.pipeline()
-    # config = rs.config()
-    # # Tell config that we will use a recorded device from file to be used by the pipeline through playback.
-    # rs.config.enable_device_from_file(config,"..\\D405-test.bag")
-    # config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
-    # # Start streaming from file
-    # pipeline.start(config)
-
-    # Configure the pipeline to stream the depth stream
-    # Change this parameters according to the recorded bag file resolution
-    #config.enable_stream(rs.stream.depth, rs.format.z16, 30)
     try:
-        # Get frameset of depth
+        pipeline.start(config)
         frames = pipeline.wait_for_frames()
+        color_frame = frames.get_color_frame()
 
-        # Get depth frame
-        depth_frame = frames.get_depth_frame()
+        if not color_frame:
+            st.error("No frame captured from the camera.")
+            return None
 
-        # Colorize depth frame to jet colormap
-        depth_color_frame = colorizer.colorize(depth_frame)
-
-        # Convert depth_frame to numpy array to render image in opencv
-        color_image = np.asanyarray(depth_color_frame.get_data())
-    
-        # #pipeline.start(config)
-        # frames = pipeline.wait_for_frames()
-        # color_frame = frames.get_color_frame()
-
-        # if not color_frame:
-            # st.error("No frame captured from the camera.")
-            # return None
-
-        # # Convert to numpy array
-        # color_image = np.asanyarray(color_frame.get_data())
-        # image = Image.fromarray(color_image)
-        #color_image = np.asanyarray(depth_color_image.get_data())
-        image = Image.fromarray(color_image)        
+        # Convert to numpy array
+        color_image = np.asanyarray(color_frame.get_data())
+        image = Image.fromarray(color_image)
         return image
     finally:
         pipeline.stop()   
@@ -362,26 +373,3 @@ def resize_image(image_path, width, height=None):
             height = int(width * aspect_ratio)
         resized_img = img.resize((width, height))
     return resized_img
-# def camera_transform(frame: av.VideoFrame):
-    # img = frame.to_ndarray(format="bgr24")
-
-    # if filter == "blur":
-        # img = cv2.GaussianBlur(img, (21, 21), 0)
-    # elif filter == "canny":
-        # img = cv2.cvtColor(cv2.Canny(img, 100, 200), cv2.COLOR_GRAY2BGR)
-    # elif filter == "grayscale":
-        # # We convert the image twice because the first conversion returns a 2D array.
-        # # the second conversion turns it back to a 3D array.
-        # img = cv2.cvtColor(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), cv2.COLOR_GRAY2BGR)
-    # elif filter == "sepia":
-        # kernel = np.array(
-            # [[0.272, 0.534, 0.131], [0.349, 0.686, 0.168], [0.393, 0.769, 0.189]]
-        # )
-        # img = cv2.transform(img, kernel)
-    # elif filter == "invert":
-        # img = cv2.bitwise_not(img)
-    # elif filter == "none":
-        # pass
-
-    # return av.VideoFrame.from_ndarray(img, format="bgr24")
-    

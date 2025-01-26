@@ -5,79 +5,21 @@ import pandas as pd
 import os
 import torch
 from torchvision import transforms
-#from streamlit_webrtc import webrtc_streamer, VideoHTMLAttributes
 import math
 import uuid
-#import av
 import cv2
-import pyrealsense2 as rs
 from PIL import Image as im 
+
+
 from utils import create_allergen_overlay, generate_pdf, load_model, segment_image, \
 save_segmented_image, play_sound_html, get_base64_sound, mock_template_matching, resize_image, paginate_images,\
-    save_uploaded_file, capture_from_realsense, capture_from_webcam, save_captured_image, load_images, delete_images
-
-
-
+    save_uploaded_file, capture_from_realsense, capture_from_webcam, save_captured_image, load_images, delete_images,\
+        start_stream, stop_stream, get_frame
 
 sound_file = "beep.mp3"  
 base64_sound = get_base64_sound(sound_file)
 UPLOAD_DIR = "Trainings"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
-if "pipeline" not in st.session_state:
-    st.session_state.pipeline = None
-if "capturing" not in st.session_state:
-    st.session_state.capturing = False
-if "capture_count" not in st.session_state:
-    st.session_state.capture_count = 0
-if "capture_requested" not in st.session_state:
-    st.session_state.capture_requested = False
-   
-def start_stream(name=None):
-    pipeline = rs.pipeline()
-    config = rs.config()
-   # config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
-   # pipeline.start(config)
-   # Tell config that we will use a recorded device from file to be used by the pipeline through playback.
-    if name:
-     rs.config.enable_device_from_file(config,name)
-
-    
-    # Configure the pipeline to stream the depth stream
-    # Change this parameters according to the recorded bag file resolution
-    config.enable_stream(rs.stream.depth, rs.format.z16, 30)
-
-    # Start streaming from file
-    pipeline.start(config)
-
-    return pipeline
-
-# Function to stop the RealSense pipeline
-def stop_stream(pipeline):
-    pipeline.stop()
-
-# Function to get a frame from the RealSense pipeline
-def get_frame(pipeline):
-    # frames = pipeline.wait_for_frames()
-    # color_frame = frames.get_color_frame()
-    # if not color_frame:
-        # return None
-    # color_image = np.asanyarray(color_frame.get_data())
-        # Create colorizer object
-        colorizer = rs.colorizer()
-
-        frames = pipeline.wait_for_frames()
-
-        # Get depth frame
-        depth_frame = frames.get_depth_frame()
-
-        # Colorize depth frame to jet colormap
-        depth_color_frame = colorizer.colorize(depth_frame)
-
-        # Convert depth_frame to numpy array to render image in opencv
-        depth_color_image = np.asanyarray(depth_color_frame.get_data())
-
-
-        return depth_color_image
 
 # Navigation buttons with custom HTML/CSS for a polished look
 col1, _, col2 = st.columns([1,2.6, 1], gap="large")
@@ -108,6 +50,15 @@ steps = [
     "Patient and Physician Information", "Prepare Applicators and Skin Test Area", "Select Panel and Apply Test", "Record and Analyze Results",
     "Generate Pdf", "Manage Medication Interference", "Results Summary",
 ]
+
+if "pipeline" not in st.session_state:
+    st.session_state.pipeline = None
+if "capturing" not in st.session_state:
+    st.session_state.capturing = False
+if "capture_count" not in st.session_state:
+    st.session_state.capture_count = 0
+if "capture_requested" not in st.session_state:
+    st.session_state.capture_requested = False
 
 if "current_step" not in st.session_state:
     st.session_state.current_step = 0
@@ -223,143 +174,118 @@ if current == "Capturing Images":
         if uploaded_names:
             st.success(f"Uploaded: {', '.join(uploaded_names)}")
 
-    # Camera Capture Section
-    st.header("Capture Image from Intel RealSense Camera")
-    left, middle, right = st.columns(3)
-    #flag_capture=middle.button("Capture depth", use_container_width=True)
-    # User selects the input source
-    input_source = st.radio("Choose input source:", ["Direct Camera", "Bag File"]) 
-    st.success("Stream started!")
-    # Title of the app
-    #st.title("Select a File Name with File Type Filtering")
-           # Input for folder path
-    folder_path = st.text_input("Enter folder path:", value=".\\bags")
-           # Input for file type filter
-    file_extension =".bag"# st.text_input("Enter file type (e.g., .txt, .csv, .jpg):", value=".bag")
-           # Validate the folder path
-    if os.path.exists(folder_path) and os.path.isdir(folder_path):
-           # List and filter files by the given file type
-             files = [f for f in os.listdir(folder_path) 
-                if os.path.isfile(os.path.join(folder_path, f)) and f.endswith(file_extension)]
-             if files:
-               # Dropdown to select a file
-               selected_file = st.selectbox("Select a file:", files)
-                # Display the selected file name
-               if selected_file:
-                 full_path = os.path.join(folder_path, selected_file)
-                 st.success(f"You selected: **{selected_file}**")
-                 st.info(f"Full Path: `{full_path}`")
-                 # if selected_file is not None:
-                   # if st.session_state.pipeline is None:
-                      # st.session_state.pipeline = start_stream(full_path)
-                      # st.session_state.capturing = True
-                      # st.success("Stream started!")
-               else:
-                st.warning(f"No files found with the extension '{file_extension}' in the folder.")
-    else:
-             st.error("The folder does not exist. Please enter a valid folder path.")
+    
+    capture_tab, realsense_tab = st.tabs(["Intel RealSense", "Webcam Capture" ])
+    
+        
+    with realsense_tab:
+        st.header("Intel RealSense Camera")
 
-    if left.button("Capture from Intel RealSense Camera", use_container_width=True):
-        if input_source == "Direct Camera":
-            # Configure the pipeline for live streaming from the camera
-            st.write("Starting live stream from RealSense camera...")
-            if selected_file is not None:
-               if st.session_state.pipeline is None:
-                      st.session_state.pipeline = start_stream()
-                      st.session_state.capturing = True
-                      st.success("Stream started!")
+        # User selects the input source
+        input_source = st.radio("Choose input source:", ["Direct Camera", "Bag File"]) 
+        st.success("Stream started!")
+        # Title of the app
 
-        elif input_source == "Bag File":
-           # # Title of the app
-           # st.title("Select a File Name with File Type Filtering")
-           # # Input for folder path
-           # folder_path = st.text_input("Enter folder path:", value=".\\bags")
-           # # Input for file type filter
-           # file_extension =".bag"# st.text_input("Enter file type (e.g., .txt, .csv, .jpg):", value=".bag")
-           # # Validate the folder path
-           # if os.path.exists(folder_path) and os.path.isdir(folder_path):
-           # # List and filter files by the given file type
-             # files = [f for f in os.listdir(folder_path) 
-                # if os.path.isfile(os.path.join(folder_path, f)) and f.endswith(file_extension)]
-             # if files:
-               # # Dropdown to select a file
-               # selected_file = st.selectbox("Select a file:", files)
-                # # Display the selected file name
-               # if selected_file:
-                 # full_path = os.path.join(folder_path, selected_file)
-                 # st.success(f"You selected: **{selected_file}**")
-                 # st.info(f"Full Path: `{full_path}`")
-                 # if selected_file is not None:
-                   if st.session_state.pipeline is None:
-                      st.session_state.pipeline = start_stream(full_path)
-                      st.session_state.capturing = True
-                      st.success("Stream started!")
-               # else:
-                # st.warning(f"No files found with the extension '{file_extension}' in the folder.")
-           # else:
-             # st.error("The folder does not exist. Please enter a valid folder path.")
-    if right.button("stop Capture", use_container_width=True):
-        if st.session_state.pipeline:
-          stop_stream(st.session_state.pipeline)
-          st.session_state.pipeline = None
-          st.session_state.capturing = False
-          st.success("Stream stopped!")    
-    frame_placeholder = st.empty()  # Placeholder for video frame
-    # Capture Button (outside the loop)
-    if st.session_state.capturing:
-       capture_button = middle.button("Capture Image", key="capture_button", use_container_width=True)
-    # Live Stream and Capture
-    if st.session_state.pipeline:
-      st.write("Streaming live...")
-    # Continuously fetch frames
-    while st.session_state.pipeline:
-        frame = get_frame(st.session_state.pipeline)
-        if frame is not None:
-            # Convert BGR to RGB for Streamlit
-            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            frame_placeholder.image(frame_rgb, channels="RGB", use_container_width=True)
-            if "capture_button" in st.session_state:
-             if capture_button:
-                file_name  = f"imageD405_{uuid.uuid4().hex}.png"
-                #cv2.imwrite(file_name, frame)
-                captured_image = im.fromarray(frame) 
-                save_captured_image(captured_image, UPLOAD_DIR, file_name)
-                st.success(f"Captured image saved as {file_name}")
-                st.session_state.capture_requested = False
-                capture_button=False
-    ##########################################################
-    #    captured_image = capture_from_realsense(st)
-        # if captured_image:
-            # file_name  = f"imageD405_{uuid.uuid4().hex}.png"
-            # save_captured_image(captured_image, UPLOAD_DIR, file_name)
-            # #st.image(captured_image, caption="Captured Image from RealSense", use_container_width=True)
-            # st.success(f"Captured image saved as {file_name}")
+        folder_path = st.text_input("Enter folder path:", value=".\\bags")
+        
+        # Input for file type filter
+        file_extension =".bag"# st.text_input("Enter file type (e.g., .txt, .csv, .jpg):", value=".bag")
+            # Validate the folder path
+        selected_file = None
+        
+        if os.path.exists(folder_path) and os.path.isdir(folder_path):
+            # List and filter files by the given file type
+                files = [f for f in os.listdir(folder_path) 
+                    if os.path.isfile(os.path.join(folder_path, f)) and f.endswith(file_extension)]
+                if files:
+                # Dropdown to select a file
+                    selected_file = st.selectbox("Select a file:", files)
+                    # Display the selected file name
+                    if selected_file:
+                        full_path = os.path.join(folder_path, selected_file)
+                        st.success(f"You selected: **{selected_file}**")
+                        st.info(f"Full Path: `{full_path}`")
 
-    #if st.button("streamer"):
-    #captured_image = capture_from_webcam(st)
-    img_file_buffer = st.camera_input("Take a picture",disabled=False)
-    if img_file_buffer is not None:
-    # To read image file buffer with OpenCV:
-        bytes_data = img_file_buffer.getvalue()
-        data = cv2.imdecode(np.frombuffer(bytes_data, np.uint8), cv2.IMREAD_COLOR)
-        data=cv2.cvtColor(data,cv2.COLOR_RGB2BGR)
-        captured_image = im.fromarray(data) 
-        #captured_image=cv2.cvtColor(captured_image, cv2.COLOR_BGR2RGB)
-        file_name = f"image_{uuid.uuid4().hex}.png"
-        save_captured_image(captured_image, UPLOAD_DIR, file_name)
-         # st.image(captured_image, caption="Captured Image from Webcam", use_container_width=True)
-        st.success(f"Captured image saved as {file_name}")
-    #webrtc_streamer(key="streamer",video_frame_callback=camera_transform,sendback_audio=False)
-        # if captured_image:
-            # file_name = f"image_{uuid.uuid4().hex}.png"
-            # save_captured_image(captured_image, UPLOAD_DIR, file_name)
-            # st.image(captured_image, caption="Captured Image from Webcam", use_container_width=True)
-            # st.success(f"Captured image saved as {file_name}")
+                else:
+                    st.warning(f"No files found with the extension '{file_extension}' in the folder.")
+        else:
+                st.error("The folder does not exist. Please enter a valid folder path.")
 
+        frame_placeholder = st.empty()  # Placeholder for video frame
+        
+
+        ##########################################################
+        left, middle, right = st.columns(3)
+        if left.button("Capture from Intel RealSense Camera", use_container_width=True):
+            if input_source == "Direct Camera":
+                # Configure the pipeline for live streaming from the camera
+                st.write("Starting live stream from RealSense camera...")
+                if selected_file is not None:
+                    if st.session_state.pipeline is None:
+                            st.session_state.pipeline = start_stream()
+                            st.session_state.capturing = True
+                            st.success("Stream started!")
+
+            elif input_source == "Bag File":
+                if st.session_state.pipeline is None:
+                        st.session_state.pipeline = start_stream(full_path)
+                        st.session_state.capturing = True
+                        st.success("Stream started!")
+
+        if right.button("Stop Capture", use_container_width=True):
+            if st.session_state.pipeline:
+                stop_stream(st.session_state.pipeline)
+                st.session_state.pipeline = None
+                st.session_state.capturing = False
+                frame_placeholder.empty()
+                st.success("Stream stopped!")    
+
+        # Capture Button (outside the loop)
+        if st.session_state.capturing:
+            capture_button = middle.button("Capture Image", key="capture_button", use_container_width=True)
+        
+
+            while st.session_state.pipeline:
+                frame = get_frame(st.session_state.pipeline)
+                if frame is not None:
+                    # Convert BGR to RGB for Streamlit
+                    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    frame_placeholder.image(frame_rgb, channels="RGB", use_container_width=True)
+                    
+                    # Save image only when the Capture button is clicked
+                    if capture_button:
+                        file_name = f"image_{uuid.uuid4().hex}.png"
+                        captured_image = im.fromarray(frame_rgb)  # Convert frame to PIL image
+                        save_captured_image(captured_image, UPLOAD_DIR, file_name)
+                        st.success(f"Captured image saved as {file_name}")
+                        break  # Exit loop after capturing
+                            
+    with capture_tab:
+        st.header("Webcam Capture")
+
+        # Streamlit's built-in camera input widget
+        img_file_buffer = st.camera_input("Take a picture using your webcam", disabled=False)
+
+        if img_file_buffer is not None:
+            # Process the image buffer using OpenCV
+            bytes_data = img_file_buffer.getvalue()
+            image_data = cv2.imdecode(np.frombuffer(bytes_data, np.uint8), cv2.IMREAD_COLOR)
+            image_data = cv2.cvtColor(image_data, cv2.COLOR_RGB2BGR)  # Convert to BGR for OpenCV
+            
+            # Convert to PIL Image for saving
+            captured_image = im.fromarray(image_data)
+            
+            # Save the image with a unique filename
+            file_name = f"webcam_image_{uuid.uuid4().hex}.png"
+            save_captured_image(captured_image, UPLOAD_DIR, file_name)
+            
+            # Provide feedback to the user
+            st.success(f"Captured image saved as {file_name}")
+            st.image(captured_image, caption="Captured Image from Webcam", use_container_width=True)
     # Display Images
     st.header("Display Images")
     
-    if st.button("Delete Selected Images",key="two") and selected_images:
+    if st.button("Delete Selected Images") and selected_images:
         delete_images(UPLOAD_DIR, selected_images)
         st.success("Deleted selected images.")
         st.session_state["selected_images"] = set()  # Clear the selection
