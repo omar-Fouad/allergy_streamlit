@@ -363,10 +363,7 @@ if current == "Capturing Images":
             if frame is not None:
                # Convert BGR to RGB for Streamlit
                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-               if i%4==0:
-                frame_placeholder.image(frame_rgb, channels="RGB", use_container_width=True)
-               else:
-                frame_placeholder.empty()
+               frame_placeholder.image(frame_rgb, channels="RGB", use_container_width=True)
                if "capture_button" in st.session_state:
                  if capture_button:
                     file_name  = f"imageD405_{uuid.uuid4().hex}.png"
@@ -376,9 +373,9 @@ if current == "Capturing Images":
                     st.success(f"Captured image saved as {file_name}")
                     st.session_state.capture_requested = False
                     capture_button=False
-               i=i+1
-               st.write(f"Displayed frame {i}")
-               time.sleep(0.5)    
+               #i=i+1
+               #st.write(f"Displayed frame {i}")
+               time.sleep(0.03)    
                             
     with capture_tab:
         st.header("Webcam Capture")
