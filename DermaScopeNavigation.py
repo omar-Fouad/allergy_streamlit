@@ -318,7 +318,7 @@ if current == "Capturing Images":
                 st.write("Starting live stream from RealSense camera...")
                 #if selected_file is not None:
                 if st.session_state.pipeline is None:
-                        st.session_state.pipeline = start_stream(st) #change
+                        st.session_state.pipeline = start_stream_new(st) #change
                         st.session_state.capturing = True
                         i=0
                         st.success("Stream started!")
