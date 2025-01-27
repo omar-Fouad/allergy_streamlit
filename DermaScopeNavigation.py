@@ -9,6 +9,7 @@ import math
 import uuid
 import cv2
 from PIL import Image as im 
+import pyrealsense2 as rs
 import gdown
 
 from utils import create_allergen_overlay, generate_pdf, load_model, segment_image, \
@@ -28,7 +29,7 @@ def start_stream_new(st, bag_file=None):
             if not os.path.exists(bag_file):
                 st.error(f"Bag file not found: {bag_file}")
             config.enable_device_from_file(bag_file)
-            print(f"Streaming from file: {bag_file}")
+            st.success(f"Streaming from file: {bag_file}")
         else:
             # Configure for live camera
             context = rs.context()
@@ -37,7 +38,7 @@ def start_stream_new(st, bag_file=None):
             
             config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
             config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
-            print("Streaming from live camera.")
+            st.success("Streaming from live camera.")
 
         # Start the pipeline
         pipeline.start(config)
@@ -310,17 +311,33 @@ if current == "Capturing Images":
         
 
         ##########################################################
-        left, middle, right= st.columns(3)
+        left, middle, right = st.columns(3)
         if left.button("Capture from Intel RealSense Camera", use_container_width=True):
             if input_source == "Direct Camera":
                 # Configure the pipeline for live streaming from the camera
                 st.write("Starting live stream from RealSense camera...")
                 #if selected_file is not None:
                 if st.session_state.pipeline is None:
-                            st.session_state.pipeline = start_stream()
-                            st.session_state.capturing = True
-                            i=0
-                            st.success("Stream started!")
+                        st.session_state.pipeline = start_stream(st) #change
+                        st.session_state.capturing = True
+                        i=0
+                        st.success("Stream started!")
+
+            # elif input_source == "Bag File":
+                # if st.session_state.pipeline is None:
+                        # st.session_state.pipeline = start_stream(st, full_path) #change
+                        # st.session_state.capturing = True
+                        # st.success("Stream started!")
+        # if left.button("Capture from Intel RealSense Camera", use_container_width=True):
+            # if input_source == "Direct Camera":
+                # # Configure the pipeline for live streaming from the camera
+                # st.write("Starting live stream from RealSense camera...")
+                # #if selected_file is not None:
+                # if st.session_state.pipeline is None:
+                            # st.session_state.pipeline = start_stream()
+                            # st.session_state.capturing = True
+                            # i=0
+                            # st.success("Stream started!")
 
             elif input_source == "Bag File":
                if not drive_url:
@@ -341,7 +358,7 @@ if current == "Capturing Images":
                    else:
                       st.error("The file could not be downloaded or is empty!")
                    if st.session_state.pipeline is None:
-                        st.session_state.pipeline = start_stream(bag_file)
+                        st.session_state.pipeline = start_stream_new(st,bag_file)
                         st.session_state.capturing = True
                         st.success("Stream started!")
 
