@@ -375,7 +375,7 @@ if current == "Capturing Images":
             capture_button = middle.button("Capture Image", key="capture_button", use_container_width=True)
         
         
-        while st.session_state.pipeline:
+        while ((st.session_state.pipeline) and (i<150)):
             frame = get_frame(st.session_state.pipeline)
             if frame is not None:
                # Convert BGR to RGB for Streamlit
@@ -391,7 +391,7 @@ if current == "Capturing Images":
                     st.success(f"Captured image saved as {file_name}")
                     st.session_state.capture_requested = False
                     capture_button=False
-               #i=i+1
+               i=i+1
                #st.write(f"Displayed frame {i}")
                time.sleep(0.03)    
                             
