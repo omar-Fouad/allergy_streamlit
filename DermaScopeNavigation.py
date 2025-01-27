@@ -380,7 +380,7 @@ if current == "Capturing Images":
             if frame is not None:
                # Convert BGR to RGB for Streamlit
                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-               frame_rgb = cv2.resize(frame_rgb, (0, 0), fx = 0.5, fy = 0.5)
+               frame_rgb = cv2.resize(frame_rgb, (0, 0), fx = 0.25, fy = 0.25)
                frame_placeholder.image(frame_rgb, channels="RGB", use_container_width=True)
                if "capture_button" in st.session_state:
                  if capture_button:
