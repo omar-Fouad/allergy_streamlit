@@ -15,7 +15,7 @@ import gdown
 from utils import create_allergen_overlay, generate_pdf, load_model, segment_image, \
 save_segmented_image, play_sound_html, get_base64_sound, mock_template_matching, resize_image, paginate_images,\
     save_uploaded_file, capture_from_realsense, capture_from_webcam, save_captured_image, load_images, delete_images,\
-        start_stream, stop_stream, get_frame
+        start_stream, stop_stream, get_frame, RealSenseClient
 import requests
 import os
 i=0
@@ -153,9 +153,12 @@ if "capture_count" not in st.session_state:
     st.session_state.capture_count = 0
 if "capture_requested" not in st.session_state:
     st.session_state.capture_requested = False
-
+if "capture_frome_Ether" not in st.session_state:
+    st.session_state.capture_frome_Ether = False
 if "current_step" not in st.session_state:
     st.session_state.current_step = 0
+if "client" not in st.session_state:
+    st.session_state.client = None
  
 if "previous_menu_option" not in st.session_state:
     st.session_state.previous_menu_option = None  # Initialize as None
@@ -276,7 +279,7 @@ if current == "Capturing Images":
         st.header("Intel RealSense Camera")
 
         # User selects the input source
-        input_source = st.radio("Choose input source:", ["Direct Camera", "Bag File"]) 
+        input_source = st.radio("Choose input source:", ["Direct Camera", "Bag File","Ethernet"]) 
         st.success("Stream started!")
         # Title of the app
         
@@ -323,22 +326,6 @@ if current == "Capturing Images":
                         i=0
                         st.success("Stream started!")
 
-            # elif input_source == "Bag File":
-                # if st.session_state.pipeline is None:
-                        # st.session_state.pipeline = start_stream(st, full_path) #change
-                        # st.session_state.capturing = True
-                        # st.success("Stream started!")
-        # if left.button("Capture from Intel RealSense Camera", use_container_width=True):
-            # if input_source == "Direct Camera":
-                # # Configure the pipeline for live streaming from the camera
-                # st.write("Starting live stream from RealSense camera...")
-                # #if selected_file is not None:
-                # if st.session_state.pipeline is None:
-                            # st.session_state.pipeline = start_stream()
-                            # st.session_state.capturing = True
-                            # i=0
-                            # st.success("Stream started!")
-
             elif input_source == "Bag File":
                if not drive_url:
                    st.error("Please provide a valid Google Drive URL!")
@@ -361,12 +348,25 @@ if current == "Capturing Images":
                         st.session_state.pipeline = start_stream_new(st,bag_file)
                         st.session_state.capturing = True
                         st.success("Stream started!")
-
+            else: 
+                    if st.session_state.client is None:             
+                         st.session_state.capture_frome_Ether = True
+                         st.session_state.capturing=True
+                         st.success("Stream started!")
+                         st.session_state.client = RealSenseClient()
         if right.button("Stop Capture", use_container_width=True):
             if st.session_state.pipeline:
                 stop_stream(st.session_state.pipeline)
                 st.session_state.pipeline = None
                 st.session_state.capturing = False
+                st.session_state.capture_frome_Ether = False
+                frame_placeholder.empty()
+                st.success("Stream stopped!")    
+            if  st.session_state.client:
+                st.session_state.capturing = False
+                st.session_state.capture_frome_Ether = False
+                st.session_state.client.destroy()
+                st.session_state.client=None
                 frame_placeholder.empty()
                 st.success("Stream stopped!")    
 
@@ -375,7 +375,8 @@ if current == "Capturing Images":
             capture_button = middle.button("Capture Image", key="capture_button", use_container_width=True)
         
         
-        while ((st.session_state.pipeline) and (i<150)):
+        while st.session_state.pipeline:
+            
             frame = get_frame(st.session_state.pipeline)
             if frame is not None:
                # Convert BGR to RGB for Streamlit
@@ -391,6 +392,28 @@ if current == "Capturing Images":
                     st.success(f"Captured image saved as {file_name}")
                     st.session_state.capture_requested = False
                     capture_button=False
+               i=i+1
+               #st.write(f"Displayed frame {i}")
+               time.sleep(0.03)    
+        print(st.session_state.capture_frome_Ether)       
+        while st.session_state.client:       
+            
+            frame,depth=st.session_state.client.receive_frame()
+            if frame is not None:
+               # Convert BGR to RGB for Streamlit
+               #frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+               frame_rgb = cv2.resize(frame, (0, 0), fx = 0.25, fy = 0.25)
+               frame_placeholder.image(frame_rgb, channels="RGB", use_container_width=True)
+               if "capture_button" in st.session_state:
+                 if capture_button:
+                    file_name  = f"imageD405_{uuid.uuid4().hex}.png"
+                    #cv2.imwrite(file_name, frame)
+                    captured_image = im.fromarray(frame) 
+                    save_captured_image(captured_image, UPLOAD_DIR, file_name)
+                    st.success(f"Captured image saved as {file_name}")
+                    st.session_state.capture_requested = False
+                    capture_button=False
+                    print("fuck")
                i=i+1
                #st.write(f"Displayed frame {i}")
                time.sleep(0.03)    

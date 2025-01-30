@@ -14,6 +14,8 @@ import os
 import numpy as np
 import pyrealsense2 as rs
 import cv2
+import socket
+import pickle
 #from tkinter import Tk, filedialog
 
 
@@ -373,3 +375,83 @@ def resize_image(image_path, width, height=None):
             height = int(width * aspect_ratio)
         resized_img = img.resize((width, height))
     return resized_img
+
+class RealSenseClient:
+    def __init__(self, host='127.0.0.1', port=5000):
+        self.host = host
+        self.port = port
+        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.client_socket.connect((self.host, self.port))
+        print(f"Connected to server at {self.host}:{self.port}")
+    def destroy(self):
+        self.client_socket.close()
+
+    def receive_data(self):
+        try:
+            while True:
+                # Receive the size of the incoming data
+                size_data = self.client_socket.recv(4)
+                if not size_data:
+                    break
+                size = int.from_bytes(size_data, byteorder='big')
+
+                # Receive the serialized data
+                serialized_data = b''
+                while len(serialized_data) < size:
+                    serialized_data += self.client_socket.recv(size - len(serialized_data))
+
+                # Deserialize the data
+                data = pickle.loads(serialized_data)
+                depth_image = data['depth']
+                color_image = data['color']
+
+                # Display the received frames
+                depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
+                return color_image, depth_image
+                # cv2.imshow("Depth", depth_colormap)
+                # cv2.imshow("Color", color_image)
+
+                # # Break the loop if 'q' is pressed
+                # if cv2.waitKey(1) & 0xFF == ord('q'):
+                    # break
+
+        except Exception as e:
+            print(f"Error: {e}")
+        finally:
+            self.client_socket.close()
+            #cv2.destroyAllWindows()
+    def receive_frame(self):
+        try:
+            
+                # Receive the size of the incoming data
+                size_data = self.client_socket.recv(4)
+                # if not size_data:
+                    # break
+                size = int.from_bytes(size_data, byteorder='big')
+                if(size>0):
+                  # Receive the serialized data
+                  serialized_data = b''
+                  
+                  while len(serialized_data) < size:
+                    serialized_data += self.client_socket.recv(size - len(serialized_data))
+
+                  # Deserialize the data
+                  data = pickle.loads(serialized_data)
+                  depth_image = data['depth']
+                  color_image = data['color']
+                  # Display the received frames
+                  depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
+                  return color_image, depth_image
+                else:
+                  return None, None                
+                # cv2.imshow("Depth", depth_colormap)
+                # cv2.imshow("Color", color_image)
+
+                # # Break the loop if 'q' is pressed
+                # if cv2.waitKey(1) & 0xFF == ord('q'):
+                    # break
+
+        except Exception as e:
+            print(f"Error: {e}")
+
+    
