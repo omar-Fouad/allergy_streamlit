@@ -377,7 +377,7 @@ def resize_image(image_path, width, height=None):
     return resized_img
 
 class RealSenseClient:
-    def __init__(self, host='127.0.0.1', port=5000):
+    def __init__(self, host='https://fa18-109-236-81-182.ngrok-free.app', port=5000):
         self.host = host
         self.port = port
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
